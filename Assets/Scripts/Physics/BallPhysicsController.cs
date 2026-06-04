@@ -3,6 +3,7 @@
 // Custom Physics: Rigidbody는 충돌 감지 전달 용도로만 사용
 // ============================================================
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 [RequireComponent(typeof(Rigidbody))]
 public class BallPhysicsController : MonoBehaviour
@@ -219,6 +220,14 @@ public class BallPhysicsController : MonoBehaviour
         _state              = BallState.Idle;
         _rb.linearVelocity  = Vector3.zero;
         SetTrail(false);
+    }
+
+    void Update()
+    {
+        if (transform.position.y < -10f)
+        {
+            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        }
     }
 
     public float   GetSpeed()           => _velocity.magnitude;

@@ -134,30 +134,48 @@ public class BallPhysicsController : MonoBehaviour
     // 구름 물리: 표면 마찰 감속
     // ─────────────────────────────────────────────────────────
     private void UpdateRolling(float dt)
+{
+    // 💡 삭제: _velocity.y = 0f; (경사면을 타야 하므로 Y축 속도를 죽이면 안 됨)
+
+    // 1. 공 아래로 레이저를 쏴서 현재 밟고 있는 지면의 기울기(Normal)를 구함
+    Vector3 groundNormal = Vector3.up; 
+    // 공의 반경에 맞춰 레이캐스트 거리 조절 (공 크기가 1이면 0.6f 정도면 적당해)
+    if (Physics.Raycast(transform.position, Vector3.down, out RaycastHit hit, 1.0f))
     {
-        _velocity.y = 0f;
-
-        float mu = (SurfaceManager.Instance != null)
-            ? SurfaceManager.Instance.GetFriction(transform.position)
-            : physicsData.frictionFairway;
-
-        // ★ v(t+dt) = v(t) × (1 - μ × dt)
-        _velocity *= Mathf.Max(0f, 1f - mu * dt);
-
-        if (_velocity.magnitude < STOP_THRESHOLD)
-        {
-            _velocity = Vector3.zero;
-            _state    = BallState.Idle;
-
-            // 정지 → Trail 비활성화
-            SetTrail(false);
-
-            OnBallStopped?.Invoke();
-
-            if (showDebugLog)
-                Debug.Log("[Rolling] 공 정지 완료");
-        }
+        groundNormal = hit.normal;
     }
+
+    // 2. 경사면을 따라 내려가는 중력 계산
+    Vector3 gravityForce = Vector3.down * physicsData.gravity;
+    Vector3 gravityOnSlope = Vector3.ProjectOnPlane(gravityForce, groundNormal);
+
+    // 3. 마찰력 가져오기
+    float mu = (SurfaceManager.Instance != null)
+        ? SurfaceManager.Instance.GetFriction(transform.position)
+        : physicsData.frictionFairway;
+
+    // 4. 속도 업데이트: 내리막 가속도 먼저 더하고 -> 마찰력으로 감속
+    _velocity += gravityOnSlope * dt;
+    _velocity *= Mathf.Max(0f, 1f - mu * dt);
+
+    // 5. 공이 지면을 파고들거나 뜨지 않도록 속도의 방향을 경사면에 딱 맞춤
+    _velocity = Vector3.ProjectOnPlane(_velocity, groundNormal);
+
+    // 6. 정지 조건 수정: 속도가 느릴 뿐만 아니라 "평지(경사 5도 미만)"일 때만 멈추게 함!
+    // 경사가 가파르면 마이너스 속도로 굴러내려가야 하니까 멈추면 안 돼.
+    float slopeAngle = Vector3.Angle(Vector3.up, groundNormal);
+    if (_velocity.magnitude < STOP_THRESHOLD && slopeAngle < 5f) 
+    {
+        _velocity = Vector3.zero;
+        _state    = BallState.Idle;
+
+        SetTrail(false);
+        OnBallStopped?.Invoke();
+
+        if (showDebugLog)
+            Debug.Log("[Rolling] 공 정지 완료 (평지 도달)");
+    }
+}
 
     // ─────────────────────────────────────────────────────────
     // 충돌 처리: 반발계수 적용 벡터 반사
@@ -184,7 +202,8 @@ public class BallPhysicsController : MonoBehaviour
         if (verticalSpeed < ROLL_V_THRESHOLD)
         {
             _velocity -= Vector3.Dot(_velocity, normal) * normal;
-            _velocity.y = 0f;
+            //오류 수정 
+            //_velocity.y = 0f;
             _state = BallState.Rolling;
 
             if (showDebugLog)
@@ -228,6 +247,13 @@ public class BallPhysicsController : MonoBehaviour
         {
             SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
         }
+        // 매 프레임마다 UIManager로 공의 현재 속력 쏴주기
+        // rb.linearVelocity.magnitude는 벡터(방향+속도)에서 순수 '속력' 수치만 쏙 빼오는 마법의 명령어! (유니티 6 기준)
+        if (UIManager.Instance != null)
+        {
+            UIManager.Instance.UpdateSpeed(_velocity.magnitude);
+        }
+ 
     }
 
     public float   GetSpeed()           => _velocity.magnitude;

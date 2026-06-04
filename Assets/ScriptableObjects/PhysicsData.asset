@@ -17,4 +17,5 @@ MonoBehaviour:
   restitution: 0.68
   frictionFairway: 0.25
   frictionRough: 0.55
-  frictionBunker: 0.8
+  frictionBunker: 0.91
+  frictionGreen: 0.15

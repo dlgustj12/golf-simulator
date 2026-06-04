@@ -28,6 +28,8 @@ public class UIManager : MonoBehaviour
     public TMP_Text      stateText;
     public TMP_Text      surfaceText;
 
+    public TextMeshProUGUI speedText; // 인스펙터에서 연결할 스피드 텍스트 빈칸
+
     [Header("결과창 패널")]
     public GameObject    resultPanel;          // 결과창 루트 Panel GameObject
     public TMP_Text      resultTotalStrokeText; // "총 타수: 4"
@@ -46,6 +48,22 @@ public class UIManager : MonoBehaviour
     private bool  _isCharging   = false;
     private float _currentPower = 0f;
     private bool  _canShoot     = true;
+
+    // ⭐ 1. 이 줄을 꼭 추가해 줘! (어디서든 UIManager를 부를 수 있게 해주는 마법의 변수)
+    public static UIManager Instance; 
+
+    // ⭐ 2. 게임이 시작될 때 '나 자신(this)'을 Instance에 등록하는 세팅
+    private void Awake()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+    }
 
     // ─────────────────────────────────────────────────────────
     void Start()
@@ -102,7 +120,7 @@ public class UIManager : MonoBehaviour
         {
             _isCharging = true;
 
-            // ★ PingPong 수식:
+            //  PingPong 수식:
             //   timer += speed × dt
             //   power  = PingPong(timer × maxPower, maxPower)
             _pingPongTimer += pingPongSpeed * Time.deltaTime;
@@ -255,5 +273,15 @@ public class UIManager : MonoBehaviour
         string[] dirs = { "N", "NE", "E", "SE", "S", "SW", "W", "NW" };
         int index = Mathf.RoundToInt(angle / 45f) % 8;
         return dirs[index];
+    }
+
+    public void UpdateSpeed(float speed)
+    {
+        // 유니티 기본 속도는 m/s. 여기에 3.6을 곱하면 우리가 흔히 아는 km/h
+        // "F1"은 소수점 첫째 자리까지만 깔끔하게 보여달라는 뜻.
+        if (speedText != null)
+        {
+            speedText.text = "Speed: " + (speed * 3.6f).ToString("F1") + " km/h"; 
+        }
     }
 }

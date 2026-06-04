@@ -22,23 +22,28 @@ public class BallPhysicsController : MonoBehaviour
 
     // ── 내부 상태 ─────────────────────────────────────────────
     private Rigidbody _rb;
-    private Vector3   _velocity;
+    private Vector3 _velocity;
 
     public enum BallState { Idle, Flying, Rolling }
     private BallState _state = BallState.Idle;
 
+    public bool isHoleIn = false; // 홀인원 성공 여부
+
+    //벙커 판별 변수
+    public bool isInBunker = false;
+
     private float _lastCollisionTime = -1f;
     private const float COLLISION_COOLDOWN = 0.05f;
-    private const float STOP_THRESHOLD    = 0.08f;
-    private const float ROLL_V_THRESHOLD  = 1.0f;
+    private const float STOP_THRESHOLD = 0.08f;
+    private const float ROLL_V_THRESHOLD = 1.0f;
 
     private Vector3 _lastFacingDir = Vector3.forward;
 
     // ── 외부 조회용 프로퍼티 ──────────────────────────────────
-    public Vector3   Velocity     => _velocity;
-    public bool      IsMoving     => _state != BallState.Idle;
-    public bool      IsFlying     => _state == BallState.Flying;
-    public bool      IsRolling    => _state == BallState.Rolling;
+    public Vector3 Velocity => _velocity;
+    public bool IsMoving => _state != BallState.Idle;
+    public bool IsFlying => _state == BallState.Flying;
+    public bool IsRolling => _state == BallState.Rolling;
     public BallState CurrentState => _state;
 
     // ── 이벤트 ────────────────────────────────────────────────
@@ -49,11 +54,11 @@ public class BallPhysicsController : MonoBehaviour
     void Awake()
     {
         _rb = GetComponent<Rigidbody>();
-        _rb.isKinematic    = false;
-        _rb.useGravity     = false;
-        _rb.linearDamping  = 0f;
+        _rb.isKinematic = false;
+        _rb.useGravity = false;
+        _rb.linearDamping = 0f;
         _rb.angularDamping = 0f;
-        _rb.constraints    = RigidbodyConstraints.FreezeRotation;
+        _rb.constraints = RigidbodyConstraints.FreezeRotation;
 
         // Trail Renderer 초기 비활성화
         // Inspector에서 연결 안 됐을 경우 자동 탐색
@@ -68,13 +73,13 @@ public class BallPhysicsController : MonoBehaviour
     // ─────────────────────────────────────────────────────────
     public void Launch(float angleDeg, float power, Vector3 facingDir)
     {
-        float rad  = angleDeg * Mathf.Deg2Rad;
+        float rad = angleDeg * Mathf.Deg2Rad;
         float cosA = Mathf.Cos(rad);
         float sinA = Mathf.Sin(rad);
 
         Vector3 horizontal = new Vector3(facingDir.x, 0f, facingDir.z).normalized;
-        _velocity          = horizontal * (power * cosA) + Vector3.up * (power * sinA);
-        _lastFacingDir     = horizontal;
+        _velocity = horizontal * (power * cosA) + Vector3.up * (power * sinA);
+        _lastFacingDir = horizontal;
 
         _state = BallState.Flying;
 
@@ -92,7 +97,7 @@ public class BallPhysicsController : MonoBehaviour
     // ─────────────────────────────────────────────────────────
     void FixedUpdate()
     {
-        _rb.linearVelocity  = Vector3.zero;
+        _rb.linearVelocity = Vector3.zero;
         _rb.angularVelocity = Vector3.zero;
 
         float dt = Time.fixedDeltaTime;
@@ -134,48 +139,58 @@ public class BallPhysicsController : MonoBehaviour
     // 구름 물리: 표면 마찰 감속
     // ─────────────────────────────────────────────────────────
     private void UpdateRolling(float dt)
-{
-    // 💡 삭제: _velocity.y = 0f; (경사면을 타야 하므로 Y축 속도를 죽이면 안 됨)
-
-    // 1. 공 아래로 레이저를 쏴서 현재 밟고 있는 지면의 기울기(Normal)를 구함
-    Vector3 groundNormal = Vector3.up; 
-    // 공의 반경에 맞춰 레이캐스트 거리 조절 (공 크기가 1이면 0.6f 정도면 적당해)
-    if (Physics.Raycast(transform.position, Vector3.down, out RaycastHit hit, 1.0f))
     {
-        groundNormal = hit.normal;
+        Vector3 groundNormal = Vector3.up;
+
+        // 레이저 쏘는 건 경사면 기울기(Normal) 구할 때만 씀! 태그 검사는 지웠어.
+        if (Physics.Raycast(transform.position, Vector3.down, out RaycastHit hit, 1.0f))
+        {
+            groundNormal = hit.normal;
+        }
+        else
+        {
+            //새로 추가된 핵심 코드
+            // 레이저가 바닥을 못 찾았다 = Paint Hole 구멍에 빠졌거나 절벽 밖으로 나갔다!
+            _state = BallState.Flying; // 다시 공중 비행(추락) 상태로 변경!
+            return; // 아래 구르기 연산은 취소하고 즉시 함수 빠져나가기
+        }
+
+        Vector3 gravityForce = Vector3.down * physicsData.gravity;
+        Vector3 gravityOnSlope = Vector3.ProjectOnPlane(gravityForce, groundNormal);
+
+        float mu = (SurfaceManager.Instance != null)
+            ? SurfaceManager.Instance.GetFriction(transform.position)
+            : physicsData.frictionFairway;
+
+        // 🚨 [새로운 벙커 감속 로직] 투명 상자에 들어갔는지(isInBunker)만 확인!
+        if (isInBunker)
+        {
+            mu *= 30.0f; // 30 정도면 충분히 늪처럼 멈출 거야. (필요하면 조절)
+
+            if (_velocity.magnitude < 2.0f)
+            {
+                _velocity = Vector3.zero;
+            }
+        }
+
+        _velocity += gravityOnSlope * dt;
+        _velocity *= Mathf.Max(0f, 1f - mu * dt);
+        _velocity = Vector3.ProjectOnPlane(_velocity, groundNormal);
+
+        float slopeAngle = Vector3.Angle(Vector3.up, groundNormal);
+
+        if (_velocity.magnitude < STOP_THRESHOLD && (slopeAngle < 5f || isInBunker))
+        {
+            _velocity = Vector3.zero;
+            _state = BallState.Idle;
+
+            SetTrail(false);
+            OnBallStopped?.Invoke();
+
+            if (showDebugLog)
+                Debug.Log("[Rolling] 공 정지 완료 (평지 또는 벙커 안착)");
+        }
     }
-
-    // 2. 경사면을 따라 내려가는 중력 계산
-    Vector3 gravityForce = Vector3.down * physicsData.gravity;
-    Vector3 gravityOnSlope = Vector3.ProjectOnPlane(gravityForce, groundNormal);
-
-    // 3. 마찰력 가져오기
-    float mu = (SurfaceManager.Instance != null)
-        ? SurfaceManager.Instance.GetFriction(transform.position)
-        : physicsData.frictionFairway;
-
-    // 4. 속도 업데이트: 내리막 가속도 먼저 더하고 -> 마찰력으로 감속
-    _velocity += gravityOnSlope * dt;
-    _velocity *= Mathf.Max(0f, 1f - mu * dt);
-
-    // 5. 공이 지면을 파고들거나 뜨지 않도록 속도의 방향을 경사면에 딱 맞춤
-    _velocity = Vector3.ProjectOnPlane(_velocity, groundNormal);
-
-    // 6. 정지 조건 수정: 속도가 느릴 뿐만 아니라 "평지(경사 5도 미만)"일 때만 멈추게 함!
-    // 경사가 가파르면 마이너스 속도로 굴러내려가야 하니까 멈추면 안 돼.
-    float slopeAngle = Vector3.Angle(Vector3.up, groundNormal);
-    if (_velocity.magnitude < STOP_THRESHOLD && slopeAngle < 5f) 
-    {
-        _velocity = Vector3.zero;
-        _state    = BallState.Idle;
-
-        SetTrail(false);
-        OnBallStopped?.Invoke();
-
-        if (showDebugLog)
-            Debug.Log("[Rolling] 공 정지 완료 (평지 도달)");
-    }
-}
 
     // ─────────────────────────────────────────────────────────
     // 충돌 처리: 반발계수 적용 벡터 반사
@@ -188,7 +203,7 @@ public class BallPhysicsController : MonoBehaviour
         _lastCollisionTime = Time.time;
 
         Vector3 normal = collision.contacts[0].normal;
-        float   vDotN  = Vector3.Dot(_velocity, normal);
+        float vDotN = Vector3.Dot(_velocity, normal);
 
         if (vDotN >= 0f) return;
 
@@ -235,27 +250,57 @@ public class BallPhysicsController : MonoBehaviour
     // ─────────────────────────────────────────────────────────
     public void ForceStop()
     {
-        _velocity           = Vector3.zero;
-        _state              = BallState.Idle;
-        _rb.linearVelocity  = Vector3.zero;
+        _velocity = Vector3.zero;
+        _state = BallState.Idle;
+        _rb.linearVelocity = Vector3.zero;
         SetTrail(false);
     }
-
-    void Update()
+void Update()
+{
+    // 홀인원이 아닐 때만 맵 밖 추락 시 씬 재시작!
+    if (!isHoleIn && transform.position.y < -10f)
     {
-        if (transform.position.y < -10f)
-        {
-            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
-        }
-        // 매 프레임마다 UIManager로 공의 현재 속력 쏴주기
-        // rb.linearVelocity.magnitude는 벡터(방향+속도)에서 순수 '속력' 수치만 쏙 빼오는 마법의 명령어! (유니티 6 기준)
-        if (UIManager.Instance != null)
-        {
-            UIManager.Instance.UpdateSpeed(_velocity.magnitude);
-        }
- 
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
-    public float   GetSpeed()           => _velocity.magnitude;
+    if (UIManager.Instance != null)
+    {
+        UIManager.Instance.UpdateSpeed(_velocity.magnitude);
+    }
+}
+
+    public float GetSpeed() => _velocity.magnitude;
     public Vector3 GetFacingDirection() => _lastFacingDir;
+
+    // 투명 벙커 상자(BunkerZone)에 들어갈 때와 나갈 때를 감지
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.CompareTag("Bunker")) isInBunker = true;
+
+        if (other.CompareTag("Hole"))
+        {
+            isHoleIn = true; // 홀인원 도장 쾅!
+
+            _state = BallState.Idle;
+            _velocity = Vector3.zero;
+            _rb.linearVelocity = Vector3.zero; 
+            _rb.angularVelocity = Vector3.zero;
+
+            Vector3 holeCenter = other.transform.position;
+            transform.position = new Vector3(holeCenter.x, transform.position.y, holeCenter.z);
+
+            GetComponent<Collider>().isTrigger = true;
+            _rb.useGravity = true;
+
+            //추가: 매니저한테 -> 공 정지했음. 점수 계산해
+            OnBallStopped?.Invoke();
+
+            Debug.Log("🎉 구멍으로 쏙! 판정 이벤트 발생!");
+        }
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        if (other.CompareTag("Bunker")) isInBunker = false;
+    }
 }

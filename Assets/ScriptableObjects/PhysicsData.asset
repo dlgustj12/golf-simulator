@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: PhysicsData
   m_EditorClassIdentifier: Assembly-CSharp::PhysicsData
   gravity: 9.81
-  ballMass: 0.0459
-  restitution: 0.68
+  ballMass: 0.08
+  restitution: 0.219
   frictionFairway: 0.25
   frictionRough: 0.55
-  frictionBunker: 0.91
+  frictionBunker: 1
   frictionGreen: 0.15

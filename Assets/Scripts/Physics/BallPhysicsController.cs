@@ -165,7 +165,7 @@ public class BallPhysicsController : MonoBehaviour
         // 🚨 [새로운 벙커 감속 로직] 투명 상자에 들어갔는지(isInBunker)만 확인!
         if (isInBunker)
         {
-            mu *= 30.0f; // 30 정도면 충분히 늪처럼 멈출 거야. (필요하면 조절)
+            mu *= 70.0f; // (필요하면 조절)
 
             if (_velocity.magnitude < 2.0f)
             {
@@ -255,19 +255,19 @@ public class BallPhysicsController : MonoBehaviour
         _rb.linearVelocity = Vector3.zero;
         SetTrail(false);
     }
-void Update()
-{
-    // 홀인원이 아닐 때만 맵 밖 추락 시 씬 재시작!
-    if (!isHoleIn && transform.position.y < -10f)
+    void Update()
     {
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
-    }
+        // 홀인원이 아닐 때만 맵 밖 추락 시 씬 재시작!
+        if (!isHoleIn && transform.position.y < -10f)
+        {
+            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        }
 
-    if (UIManager.Instance != null)
-    {
-        UIManager.Instance.UpdateSpeed(_velocity.magnitude);
+        if (UIManager.Instance != null)
+        {
+            UIManager.Instance.UpdateSpeed(_velocity.magnitude);
+        }
     }
-}
 
     public float GetSpeed() => _velocity.magnitude;
     public Vector3 GetFacingDirection() => _lastFacingDir;
@@ -283,7 +283,7 @@ void Update()
 
             _state = BallState.Idle;
             _velocity = Vector3.zero;
-            _rb.linearVelocity = Vector3.zero; 
+            _rb.linearVelocity = Vector3.zero;
             _rb.angularVelocity = Vector3.zero;
 
             Vector3 holeCenter = other.transform.position;

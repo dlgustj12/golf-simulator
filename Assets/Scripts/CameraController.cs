@@ -110,7 +110,7 @@ public class CameraController : MonoBehaviour
         _aimYaw += h * rotateSpeed * dt;
 
         // 카메라 목표 위치 계산
-        //   공 위치 기준 + 거리·각도로 오프셋
+        // 공 위치 기준 + 거리·각도로 오프셋
         float yawRad = _aimYaw * Mathf.Deg2Rad;
         Vector3 offset = new Vector3(
             Mathf.Sin(yawRad) * aimDistance,
@@ -123,12 +123,12 @@ public class CameraController : MonoBehaviour
         Vector3    lookDir   = (ballTransform.position - targetPos).normalized;
         Quaternion targetRot = Quaternion.LookRotation(lookDir);
 
-        // ★ Lerp: 위치 선형 보간 (등속 이동 느낌)
-        //   pos = (1-t)·current + t·target  →  매 프레임 목표 방향으로 일정 비율 이동
+        // Lerp: 위치 선형 보간 (등속 이동 느낌)
+        // pos = (1-t)·current + t·target  →  매 프레임 목표 방향으로 일정 비율 이동
         _currentPos = Vector3.Lerp(_currentPos, targetPos, posLerpSpeed * dt);
 
-        // ★ Slerp: 회전 구면 선형 보간 (일정 각속도 유지)
-        //   구면 위를 등각속도로 이동 → 자연스러운 회전 궤적
+        // Slerp: 회전 구면 선형 보간 (일정 각속도 유지)
+        // 구면 위를 등각속도로 이동 → 자연스러운 회전 궤적
         _currentRot = Quaternion.Slerp(_currentRot, targetRot, rotSlerpSpeed * dt);
 
         transform.position = _currentPos;
@@ -162,10 +162,10 @@ public class CameraController : MonoBehaviour
         Vector3    lookDir   = (ballPos - targetPos).normalized;
         Quaternion targetRot = Quaternion.LookRotation(lookDir);
 
-        // ★ Lerp: 위치 보간 — 공이 빠르게 움직여도 부드럽게 따라감
+        // Lerp: 위치 보간 — 공이 빠르게 움직여도 부드럽게 따라감
         _currentPos = Vector3.Lerp(_currentPos, targetPos, posLerpSpeed * dt);
 
-        // ★ Slerp: 회전 보간 — 공 방향으로 카메라가 자연스럽게 회전
+        // Slerp: 회전 보간 — 공 방향으로 카메라가 자연스럽게 회전
         _currentRot = Quaternion.Slerp(_currentRot, targetRot, rotSlerpSpeed * dt);
 
         transform.position = _currentPos;

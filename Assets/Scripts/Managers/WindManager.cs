@@ -42,7 +42,6 @@ public class WindManager : MonoBehaviour
     }
 
     // ─────────────────────────────────────────────────────────
-    // ★ Code Defense 수식
     //   windDirAngle은 Y축 기준 회전 각도 (θ)
     //   F_wind = windStrength × (sin θ, 0, cos θ)
     //   → XZ 평면 수평 벡터: sin θ = X성분, cos θ = Z성분

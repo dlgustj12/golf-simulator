@@ -79,8 +79,7 @@ public class TrajectoryPredictor : MonoBehaviour
         Vector3 totalAccel = gravAccel + windAccel;   // 매 스텝 동일 (바람 일정 가정)
 
         // ── 가상 시뮬레이션 루프 ──────────────────────────────
-        // ★ Code Defense 핵심:
-        //   실제 BallPhysicsController.UpdateFlight와 "완전히 동일한 오일러 적분 수식"을
+        //   실제 BallPhysicsController.UpdateFlight와 완전히 동일한 오일러 적분 수식을
         //   별도 변수(simPos, simVel)에 적용하여 미래 위치를 미리 계산
         //   simVel(t+dt) = simVel(t) + totalAccel × dt
         //   simPos(t+dt) = simPos(t) + simVel(t) × dt

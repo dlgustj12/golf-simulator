@@ -32,9 +32,9 @@ public class UIManager : MonoBehaviour
 
     [Header("결과창 패널")]
     public GameObject    resultPanel;          // 결과창 루트 Panel GameObject
-    public TMP_Text      resultTotalStrokeText; // "총 타수: 4"
-    public TMP_Text      resultParText;         // "기준 타수: Par 3"
-    public TMP_Text      resultGradeText;       // "Birdie!"
+    public TMP_Text      resultTotalStrokeText; // 총 타수: 4
+    public TMP_Text      resultParText;         // 기준 타수: Par 3
+    public TMP_Text      resultGradeText;       // Birdie
     public Button        restartButton;         // 다시 하기 버튼
 
     [Header("파워 게이지 파라미터")]
@@ -49,10 +49,9 @@ public class UIManager : MonoBehaviour
     private float _currentPower = 0f;
     private bool  _canShoot     = true;
 
-    // ⭐ 1. 이 줄을 꼭 추가해 줘! (어디서든 UIManager를 부를 수 있게 해주는 마법의 변수)
     public static UIManager Instance; 
 
-    // ⭐ 2. 게임이 시작될 때 '나 자신(this)'을 Instance에 등록하는 세팅
+    //게임이 시작될 때 '나 자신(this)'을 Instance에 등록하는 세팅
     private void Awake()
     {
         if (Instance == null)

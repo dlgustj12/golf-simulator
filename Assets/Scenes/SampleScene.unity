@@ -3217,7 +3217,7 @@ GameObject:
   - component: {fileID: 1627304478}
   m_Layer: 0
   m_Name: Terrain
-  m_TagString: Bunker
+  m_TagString: Fairway
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 2147483647

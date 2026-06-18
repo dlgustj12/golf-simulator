@@ -42,11 +42,11 @@ public class SurfaceManager : MonoBehaviour
     // 핵심 메서드: 공 위치 기반 마찰계수 반환
     // BallPhysicsController.UpdateRolling()에서 매 FixedUpdate 호출
     //
-    // ★ Code Defense 수식 포인트:
-    //   Physics.Raycast(origin, Vector3.down, out hit, length, layerMask)
-    //   → 공 중심 약간 위에서 수직 하강 레이를 발사
-    //   → hit.collider.tag로 지형 종류 판별
-    //   → 태그별 PhysicsData의 μ 값 반환
+    // Code Defense 수식 포인트:
+    // Physics.Raycast(origin, Vector3.down, out hit, length, layerMask)
+    // 공 중심 약간 위에서 수직 하강 레이를 발사
+    // hit.collider.tag로 지형 종류 판별
+    // 태그별 PhysicsData의 μ 값 반환
     // ─────────────────────────────────────────────────────────
     public float GetFriction(Vector3 ballPosition)
     {
@@ -84,7 +84,8 @@ public class SurfaceManager : MonoBehaviour
 
     // ─────────────────────────────────────────────────────────
     // 태그 → 마찰계수 매핑
-    // ★ Code Defense 물리 근거:
+    // 
+    // 초기값 :
     //   Fairway  μ=0.25 : 짧은 잔디, 낮은 저항 → 공이 멀리 굴러감
     //   Rough    μ=0.55 : 긴 잔디, 날 마찰 증가 → 공이 빨리 감속
     //   Bunker   μ=0.80 : 모래 입자 간 마찰 매우 큼 → 거의 즉시 정지

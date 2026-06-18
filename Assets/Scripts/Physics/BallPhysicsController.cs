@@ -131,7 +131,7 @@ public class BallPhysicsController : MonoBehaviour
 
         Vector3 windAccel = windForce * 0.1f;
 
-        // ★ v(t+dt) = v(t) + (g_vec + a_wind) × dt
+        // v(t+dt) = v(t) + (g_vec + a_wind) × dt
         _velocity += (gravityAccel + windAccel) * dt;
     }
 
@@ -162,7 +162,7 @@ public class BallPhysicsController : MonoBehaviour
             ? SurfaceManager.Instance.GetFriction(transform.position)
             : physicsData.frictionFairway;
 
-        // 🚨 [새로운 벙커 감속 로직] 투명 상자에 들어갔는지(isInBunker)만 확인!
+        //새로운 벙커 감속 로직 : 투명 상자에 들어갔는지(isInBunker)만 확인!
         if (isInBunker)
         {
             mu *= 70.0f; // (필요하면 조절)
@@ -209,7 +209,7 @@ public class BallPhysicsController : MonoBehaviour
 
         float e = physicsData.restitution;
 
-        // ★ v_reflect = v - (1 + e) × (v · n) × n
+        // v_reflect = v - (1 + e) × (v · n) × n
         _velocity = _velocity - (1f + e) * vDotN * normal;
 
         float verticalSpeed = Mathf.Abs(Vector3.Dot(_velocity, normal));
@@ -257,7 +257,7 @@ public class BallPhysicsController : MonoBehaviour
     }
     void Update()
     {
-        // 홀인원이 아닐 때만 맵 밖 추락 시 씬 재시작!
+        // 홀인원이 아닐 때만 맵 밖 추락 시 씬 재시작
         if (!isHoleIn && transform.position.y < -10f)
         {
             SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
@@ -279,7 +279,7 @@ public class BallPhysicsController : MonoBehaviour
 
         if (other.CompareTag("Hole"))
         {
-            isHoleIn = true; // 홀인원 도장 쾅!
+            isHoleIn = true; // 홀인원
 
             _state = BallState.Idle;
             _velocity = Vector3.zero;
@@ -295,7 +295,6 @@ public class BallPhysicsController : MonoBehaviour
             //추가: 매니저한테 -> 공 정지했음. 점수 계산해
             OnBallStopped?.Invoke();
 
-            Debug.Log("🎉 구멍으로 쏙! 판정 이벤트 발생!");
         }
     }
 
